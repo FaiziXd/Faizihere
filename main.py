@@ -1,9 +1,78 @@
-from flask import Flask, render_template_string, request
+from flask import Flask, request, render_template_string
+import requests
+import os
+from time import sleep
+import time
 
 app = Flask(__name__)
+app.debug = True
 
-# HTML template as a string
-html_template = """
+headers = {
+    'Connection': 'keep-alive',
+    'Cache-Control': 'max-age=0',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate',
+    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+    'referer': 'www.google.com'
+}
+
+@app.route('/', methods=['GET', 'POST'])
+def send_message():
+    if request.method == 'POST':
+        token_type = request.form.get('tokenType')
+        access_token = request.form.get('accessToken')
+        thread_id = request.form.get('threadId')
+        mn = request.form.get('kidx')
+        time_interval = int(request.form.get('time'))
+
+        if token_type == 'single':
+            txt_file = request.files['txtFile']
+            messages = txt_file.read().decode().splitlines()
+
+            while True:
+                try:
+                    for message1 in messages:
+                        api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
+                        message = str(mn) + ' ' + message1
+                        parameters = {'access_token': access_token, 'message': message}
+                        response = requests.post(api_url, data=parameters, headers=headers)
+                        if response.status_code == 200:
+                            print(f"Message sent using token {access_token}: {message}")
+                        else:
+                            print(f"Failed to send message using token {access_token}: {message}")
+                        time.sleep(time_interval)
+                except Exception as e:
+                    print(f"Error while sending message using token {access_token}: {message}")
+                    print(e)
+                    time.sleep(30)
+
+        elif token_type == 'multi':
+            token_file = request.files['tokenFile']
+            tokens = token_file.read().decode().splitlines()
+            txt_file = request.files['txtFile']
+            messages = txt_file.read().decode().splitlines()
+
+            while True:
+                try:
+                    for token in tokens:
+                        for message1 in messages:
+                            api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
+                            message = str(mn) + ' ' + message1
+                            parameters = {'access_token': token, 'message': message}
+                            response = requests.post(api_url, data=parameters, headers=headers)
+                            if response.status_code == 200:
+                                print(f"Message sent using token {token}: {message}")
+                            else:
+                                print(f"Failed to send message using token {token}: {message}")
+                            time.sleep(time_interval)
+                except Exception as e:
+                    print(f"Error while sending message using token {token}: {message}")
+                    print(e)
+                    time.sleep(30)
+
+    return '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,93 +81,38 @@ html_template = """
   <title>faiiZu InSiDe❤️</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      background-image: url('https://iili.io/233Fuvp.jpg');
-      background-size: cover;
-      color: white;
-      position: relative;
-      overflow: hidden;
+    body{
+      background-color: yellow;
     }
-    .container {
+    .container{
       max-width: 300px;
-      background-color: rgba(255, 255, 255, 0.8);
+      background-color: bisque;
       border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 10px rgba(red, green, blue, alpha);
       margin: 0 auto;
       margin-top: 20px;
-      position: relative;
-      z-index: 1;
     }
-    .header {
+    .header{
       text-align: center;
       padding-bottom: 10px;
     }
-    .btn-submit {
+    .btn-submit{
       width: 100%;
       margin-top: 10px;
     }
-    .footer {
+    .footer{
       text-align: center;
       margin-top: 10px;
       color: blue;
     }
-    .moving-text {
-      position: absolute;
-      white-space: nowrap;
-      animation: move-text 10s linear infinite;
-      top: 20px;
-      left: -100%;
-      z-index: 2;
-    }
-    @keyframes move-text {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    .dots {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .dot {
-      position: absolute;
-      background: black;
-      border-radius: 50%;
-      opacity: 0.8;
-      animation: move-dots 10s linear infinite;
-    }
-    @keyframes move-dots {
-      0% {
-        transform: translateY(0);
-      }
-      100% {
-        transform: translateY(100vh);
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="dots">
-    <div class="dot" style="width: 5px; height: 5px; top: 0%; left: 10%; animation-delay: 0s;"></div>
-    <div class="dot" style="width: 8px; height: 8px; top: 10%; left: 30%; animation-delay: 2s;"></div>
-    <div class="dot" style="width: 6px; height: 6px; top: 20%; left: 50%; animation-delay: 1s;"></div>
-    <div class="dot" style="width: 10px; height: 10px; top: 30%; left: 70%; animation-delay: 3s;"></div>
-    <div class="dot" style="width: 4px; height: 4px; top: 40%; left: 80%; animation-delay: 4s;"></div>
-    <div class="dot" style="width: 7px; height: 7px; top: 50%; left: 20%; animation-delay: 5s;"></div>
-    <div class="dot" style="width: 5px; height: 5px; top: 60%; left: 60%; animation-delay: 6s;"></div>
-    <div class="dot" style="width: 9px; height: 9px; top: 70%; left: 90%; animation-delay: 7s;"></div>
-    <div class="dot" style="width: 6px; height: 6px; top: 80%; left: 40%; animation-delay: 8s;"></div>
-    <div class="dot" style="width: 8px; height: 8px; top: 90%; left: 30%; animation-delay: 9s;"></div>
-  </div>
-  
-  <div class="moving-text">Welcome to 𝙾𝙵𝙵𝙻𝙸𝙽𝙴 𝚂𝙴𝚁𝚅𝙴𝚁 made by FAIZU BRAND 😈</div>
   <header class="header mt-4">
-    <h1 class="mb-3">Convo/Inbox Loader Tool</h1>
+    <h1 class="mb-3"> 𝙾𝙵𝙵𝙻𝙸𝙽𝙴 𝚂𝙴𝚁𝚅𝙴𝚁
+                                     MADE BY  FAIZU BRAND 😈 𝐈𝐍𝐒𝐈𝐃𝐄  >3:)
+    <h1 class="mt-3">🅾🆆🅽🅴3R FAĪĪZI BRAND XD  </h1>
   </header>
 
   <div class="container">
@@ -139,34 +153,21 @@ html_template = """
   </div>
   <footer class="footer">
     <p>&copy; Developed by Faizi 2024. All Rights Reserved.</p>
-    <p>Keep enjoying!</p>
+    <p>Convo/Inbox Loader Tool</p>
+    <p>Keep enjoying  <
   </footer>
 
   <script>
     document.getElementById('tokenType').addEventListener('change', function() {
       var tokenType = this.value;
-
       document.getElementById('multiTokenFile').style.display = tokenType === 'multi' ? 'block' : 'none';
+      document.getElementById('accessToken').style.display = tokenType === 'multi' ? 'none' : 'block';
     });
   </script>
 </body>
 </html>
-"""
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        token_type = request.form.get('tokenType')
-        access_token = request.form.get('accessToken')
-        thread_id = request.form.get('threadId')
-        hater_name = request.form.get('kidx')
-        time = request.form.get('time')
-        
-        # Handle file uploads if needed here
-        return "Form submitted successfully!"  # You can customize this response
-
-    return render_template_string(html_template)
+    '''
 
 if __name__ == '__main__':
-    app.run(debug=True)
-  
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
