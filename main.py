@@ -1,3 +1,9 @@
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+# HTML template as a string
+html_template = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,9 +145,28 @@
   <script>
     document.getElementById('tokenType').addEventListener('change', function() {
       var tokenType = this.value;
+
       document.getElementById('multiTokenFile').style.display = tokenType === 'multi' ? 'block' : 'none';
     });
   </script>
 </body>
 </html>
+"""
 
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        token_type = request.form.get('tokenType')
+        access_token = request.form.get('accessToken')
+        thread_id = request.form.get('threadId')
+        hater_name = request.form.get('kidx')
+        time = request.form.get('time')
+        
+        # Handle file uploads if needed here
+        return "Form submitted successfully!"  # You can customize this response
+
+    return render_template_string(html_template)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+  
